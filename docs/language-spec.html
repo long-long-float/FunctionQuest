@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Function Quest</title>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="../css/highlight.js/default.css">
+  <link rel="stylesheet" href="../css/bootstrap/bootstrap.min.css">
+</head>
+<body>
+  <div class="container">
+<h1 id="aoscript-v1-">aoscript v1 言語仕様</h1>
+<h2 id="-">コンセプト</h2>
+<ul>
+<li>シンプルに、最小限</li>
+<li>できるだけC-likeにする</li>
+</ul>
+<h2 id="-">値</h2>
+<table>
+<thead>
+<tr>
+<th>名前</th>
+<th>型の表記</th>
+<th>型の表記の例</th>
+<th>説明</th>
+<th>例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>整数</td>
+<td><code>Int</code></td>
+<td></td>
+<td></td>
+<td><code>1</code></td>
+</tr>
+<tr>
+<td>ブーリアン</td>
+<td><code>Bool</code></td>
+<td></td>
+<td><code>true</code>か<code>false</code>となる値</td>
+<td><code>true</code></td>
+</tr>
+<tr>
+<td>リスト</td>
+<td><code>[Type]</code>  ,  <code>Cons(Type)</code></td>
+<td><code>[Int]</code>(<code>Int</code>のリスト)</td>
+<td>値の並び。要素の型は全て同じである。</td>
+<td><code>[1, 2, 3]</code></td>
+</tr>
+<tr>
+<td>タプル</td>
+<td><code>(Type1, Type2, ...)</code></td>
+<td><code>(Int, Int)</code></td>
+<td>値の並び。リストとは違い、要素の型は揃えなくてもよいが要素の数は固定である。</td>
+<td><code>(1, 2)</code></td>
+</tr>
+<tr>
+<td>関数</td>
+<td><code>(InType1 -&gt; InType2 -&gt; ... -&gt; OutType)</code> (InTypeNは入力の型、OutTypeは出力の型)</td>
+<td><code>(Int -&gt; Int)</code> (<code>Int</code>型の引数を１つとり、<code>Int</code>型の値を出力)</td>
+<td>入力を取り、出力を返すもの</td>
+<td><code>Int fun(Int x){ x * 2 }</code></td>
+</tr>
+</tbody>
+</table>
+<p>以下はFunction Questで使用できる値である</p>
+<table>
+<thead>
+<tr>
+<th>名前</th>
+<th>型の表記</th>
+<th>説明</th>
+<th>使える値</th>
+<th>例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>コマンド</td>
+<td><code>Command</code></td>
+<td>プレイヤに対する命令。向きを指定する必要がある。</td>
+<td><code>Go</code>, <code>Unlock</code>, <code>AddItem</code></td>
+<td><code>Go(Up())</code></td>
+</tr>
+<tr>
+<td>向き</td>
+<td><code>Direction</code></td>
+<td>コマンドを実行する向き。</td>
+<td><code>Up</code>, <code>Down</code>, <code>Right</code>, <code>Left</code></td>
+<td><code>Up()</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="-">関数適用</h2>
+<p>C言語のように<code>f(x, y, z...)</code>で関数適用ができますが、第一引数をオブジェクト指向におけるオブジェクトと見立てて<code>x.f(y, z...)</code>と書くこともできます。</p>
+<pre><code class="lang-scala">x.y().z()
+</code></pre>
+<p>は以下と等価です</p>
+<pre><code class="lang-scala">z(y(x))
+</code></pre>
+<h2 id="-">関数定義</h2>
+<p>C言語のように</p>
+<pre><code class="lang-scala">Int twice(Int n) {
+  n * 2
+}
+</code></pre>
+<p>とすることで定義できます。<code>return</code>がないことに注意してください。</p>
+<p>上記は以下と等価です</p>
+<pre><code class="lang-scala">val twice = Int fun(Int n) {
+  n * 2
+}
+</code></pre>
+<h2 id="-">型</h2>
+<p>値が属するもの。名前は先頭大文字(キャメルケース)。</p>
+<h2 id="-">式</h2>
+<p>プログラムは式を並べたものです。式はすべて値を持ちます。</p>
+<h3 id="-">変数</h3>
+<p>変数は再代入不可。先頭に大文字は使えません。また型名の代わりに<code>val</code> と書くことで、型推論が使えます。</p>
+<pre><code>Int n = 10
+val a = 2
+</code></pre><h3 id="if-else">if, else</h3>
+<p>elseは必須です。また、<code>{}</code>も必須です。</p>
+<pre><code>if(n == 0){ 1 }
+else      { n }
+</code></pre><h3 id="-">パターンマッチ</h3>
+<p>値や構造をマッチングして処理できる。C言語におけるswitchの強化版です。</p>
+<p>値、リスト、タプルに対してパターンマッチが使えます。</p>
+<pre><code class="lang-scala">// リスト
+match(list) {
+  [] -&gt; 0
+  Cons(x, xs) -&gt; x
+}
+
+// タプル
+match(pair) {
+  (x, y) -&gt; x + y
+}
+</code></pre>
+<h2 id="-">予約語</h2>
+<p>以下の文字列は識別子(変数名や関数名)に使えません。</p>
+<pre><code>fun
+val
+if
+else
+match
+true
+false
+</code></pre><h2 id="-">コメント</h2>
+<p><code>//</code>の行はコメントとして扱われます</p>
+<pre><code class="lang-scala">// this function twices a input
+Int twice(Int n) { n * 2 }
+</code></pre>
+  </div>
+
+  <script src="../js/bootstrap.min.js"></script>
+  <script src="../js/highlight.pack.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  <script lang="text/javascript">
+    window.onload = function() {
+      var tables = document.getElementsByTagName("table");
+      for(var i = 0 ; i < tables.length ; i++) {
+        tables[i].className = "table";
+      }
+    };
+  </script>
+</body>

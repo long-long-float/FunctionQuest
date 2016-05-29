@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Function Quest</title>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="../css/highlight.js/default.css">
+  <link rel="stylesheet" href="../css/bootstrap/bootstrap.min.css">
+</head>
+<body>
+  <div class="container">
+<p>stage1</p>
+<pre><code class="lang-scala">[Command] getCommands((Int, Int) player, (Int, Int) goal) {
+  [Go(Up()), Go(Up()), Go(Up()), Go(Up())]
+}
+</code></pre>
+<p>stage2</p>
+<pre><code class="lang-scala">Int fact(Int n) {
+  if(n == 0) { 1 }
+  else { n * fact(n - 1) }
+}
+
+[Command] getCommands((Int, Int) player, (Int, Int) goal) {
+  [AddItem(fact), Unlock(Up()), Go(Up()), Go(Up())]
+}
+</code></pre>
+<p>stage3</p>
+<pre><code class="lang-scala">Int sum((Int, Int, Int) tri) {
+  match(tri) {
+    (a, b, c) -&gt; a + b + c
+  }
+}
+
+[Command] getCommands((Int, Int) player, (Int, Int) goal) {
+  [AddItem(sum), Unlock(Up()), Go(Up()), Go(Up())]
+}
+</code></pre>
+<p>stage4</p>
+<pre><code class="lang-scala">[Command] repeat(Command value, Int n) {
+    if(n == 0) { [] }
+    else { Cons(value, repeat(value, n - 1)) }
+}
+
+Int second((Int, Int) pos) {
+    match(pos) {
+        (x, y) -&gt; y
+    }
+}
+
+[Command] getCommands((Int, Int) player, (Int, Int) goal) {
+    repeat(Go(Up()), second(player) - second(goal))
+}
+</code></pre>
+<p>stage5</p>
+<pre><code class="lang-scala">[Int] double([Int] list) {
+  match(list) {
+    [] -&gt; []
+    Cons(x, xs) -&gt; Cons(x * 2, double(xs))
+  }
+}
+
+[Command] getCommands((Int, Int) player, (Int, Int) goal) {
+  [AddItem(double), Unlock(Up()), Go(Up()), Go(Up())]
+}
+</code></pre>
+<p>stage6</p>
+<pre><code class="lang-scala">[Command] repeat(Command value, Int n) {
+    if(n == 0) { [] }
+    else { Cons(value, repeat(value, n - 1)) }
+}
+
+Int second((Int, Int) pos) {
+    match(pos) {
+        (x, y) -&gt; y
+    }
+}
+
+[Command] append([Command] list, Command value) {
+    match(list) {
+        [] -&gt; [value]
+        Cons(x, xs) -&gt; Cons(x, append(xs, value))
+    }
+}
+
+[Command] getCommands((Int, Int) player, (Int, Int) goal) {
+  repeat(Go(Up()), second(player) - second(goal)).append(Go(Right())).append(Go(Right()))
+}
+</code></pre>
+<p>stage7</p>
+<pre><code class="lang-scala">[Command] repeat(Command value, Int n) {
+    if(n == 0) { [] }
+    else { Cons(value, repeat(value, n - 1)) }
+}
+
+Int first((Int, Int) pos) {
+    match(pos) {
+        (x, y) -&gt; x
+    }
+}
+
+Int second((Int, Int) pos) {
+    match(pos) {
+        (x, y) -&gt; y
+    }
+}
+
+[Command] append([Command] list, Command value) {
+    match(list) {
+        [] -&gt; [value]
+        Cons(x, xs) -&gt; Cons(x, append(xs, value))
+    }
+}
+
+[Command] concat([Command] front, [Command] back) {
+    match(back) {
+        [] -&gt; front
+        Cons(x, xs) -&gt; concat(append(front, x), xs)
+    }
+}
+
+[Command] getCommands((Int, Int) player, (Int, Int) goal) {
+  val dx = first(goal) - first(player)
+  val dy = second(goal) - second(player)
+  val vmove = if(dx &gt;= 0) {
+      repeat(Go(Right()), dx)
+  } else {
+      repeat(Go(Left()), -dx)
+  }
+  val hmove = if(dy &gt;= 0) {
+      repeat(Go(Down()), dy)
+  } else {
+      repeat(Go(Up()), -dy)
+  }
+  concat(hmove, vmove)
+}
+</code></pre>
+<p>stage7(別解)</p>
+<pre><code class="lang-scala">[Command] repeat(Command value, Int n, [Command] init) {
+    if(n == 0) { init }
+    else { Cons(value, repeat(value, n - 1, init)) }
+}
+
+Int first((Int, Int) pos) {
+    match(pos) {
+        (x, y) -&gt; x
+    }
+}
+
+Int second((Int, Int) pos) {
+    match(pos) {
+        (x, y) -&gt; y
+    }
+}
+
+[Command] getCommands((Int, Int) player, (Int, Int) goal) {
+  val dx = first(goal) - first(player)
+  val dy = second(goal) - second(player)
+  val vmove = if(dx &gt;= 0) {
+      repeat(Go(Right()), dx, [])
+  } else {
+      repeat(Go(Left()), -dx, [])
+  }
+  if(dy &gt;= 0) {
+      repeat(Go(Down()), dy, vmove)
+  } else {
+      repeat(Go(Up()), -dy, vmove)
+  }
+}
+</code></pre>
+  </div>
+
+  <script src="../js/bootstrap.min.js"></script>
+  <script src="../js/highlight.pack.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  <script lang="text/javascript">
+    window.onload = function() {
+      var tables = document.getElementsByTagName("table");
+      for(var i = 0 ; i < tables.length ; i++) {
+        tables[i].className = "table";
+      }
+    };
+  </script>
+</body>
