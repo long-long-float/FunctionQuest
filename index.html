@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Function Quest</title>
+  <meta charset="utf-8">
+  <style>
+    #editor {
+      height: 500px;
+    }
+    .fq-tooltip {
+      display: block;
+      position: absolute;
+      z-index: 9999;
+      width: auto;
+      height: auto;
+      padding: 0.3em 0.5em;
+      color: #FFF;
+      font-size: 1.4em;
+      background: #000;
+      border-radius: 0.5em;
+    }
+
+    #error {
+      color: #f00
+    }
+
+  </style>
+  <link rel="stylesheet" href="css/highlight.js/default.css">
+  <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css">
+  <link rel="stylesheet" href="css/jquery-console.css">
+</head>
+<body>
+  <div class="container">
+
+    <div class="navbar navbar-default">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-navbar-collapse-1" aria-expanded="false">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">Function Quest</a>
+        </div>
+        <div class="collapse navbar-collapse" id="bs-navbar-collapse-1">
+          <ul class="nav navbar-nav">
+            <li>
+              <button type="button" class="btn btn-link navbar-btn" data-toggle="modal" data-target="#readme-modal">
+                <span class="glyphicon glyphicon-asterisk"></span>
+                説明
+              </button>
+            </li>
+            <li>
+              <a href="docs/language-spec.html" target="_blank">
+                <span class="glyphicon glyphicon-file"></span>
+                言語仕様
+              </a>
+            </li>
+            <li>
+              <button type="button" class="btn btn-link navbar-btn" data-toggle="modal" data-target="#reset-confirm-modal">
+                <span class="glyphicon glyphicon-fire"></span>
+                リセット
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- modal -->
+    <div class="modal fade" id="readme-modal" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1>説明</h1>
+          </div>
+          <div class="modal-body markdown-text">
+## 基本説明
+
+<img width="100%" src="images/screen1.png" class="img-thumbnail">
+
+左側: フィールド。画面上のプレイヤーをゴールまで動かすのが目的です。
+
+右側: エディタ/REPL。このコードでプレイヤーを動かします。REPLを選択すると以下の画面が出ます。
+
+<img width="500" src="images/screen2.png" class="img-thumbnail">
+
+`>`以降にコードを書いてエンターを押すと実行されます
+
+<img width="100%" src="images/screen4.png" class="img-thumbnail">
+
+右側: ステージ名をクリックすることで、現在のステージより前のステージの説明文を読むことができます。
+
+左下: ヒントを見ることができます(ペナルティ無し)
+
+## ソース保存について
+
+<img width="500" src="images/screen3.png" class="img-thumbnail">
+
+### 保存
+
+テキストボックスにソース名を入力してからSaveボタンを押すと保存されます。また以下の条件で自動的に保存されます
+* Run!を押すことで一時的に保存されます。
+* ステージをクリアすることでstage + ステージ番号で保存されます
+
+### 読み込み
+
+左端のドロップボックスからソース名を選択し、Loadボタンを押すと読み込まれます。現在のソースは上書きされるので注意してください(<kbd>Ctrl-z</kbd>で戻せます)。
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="reset-confirm-modal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1>確認</h1>
+          </div>
+          <div class="modal-body">
+            ステージの進捗が消えてしまいますがよろしいですか?
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">いいえ</button>
+            <button type="button" class="btn btn-danger" id="reset-btn">はい</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-6">
+        <h2>Stage <span id="stage-num"></span> <span id="loop-num"></span></h2>
+        <canvas id="canvas"></canvas>
+      </div>
+      <div class="col-md-6">
+        <ul class="nav nav-tabs">
+          <li class="active">
+            <a href="#editor-pane" data-toggle="tab">
+              <span class="glyphicon glyphicon-edit"></span>
+              エディタ
+            </a>
+          </li>
+          <li>
+            <a href="#repl-pane" data-toggle="tab">
+              <span class="glyphicon glyphicon-console"></span>
+              REPL(β)
+            </a>
+          </li>
+        </ul>
+
+        <div class="tab-content">
+          <div class="tab-pane active" id="editor-pane">
+            <div id="editor"></div>
+
+            <form class="form-inline">
+              <select class="form-control" id="file-list"></select>
+              <input type="text" class="form-control" placeholder="file name" id="file-name" />
+              <button type="button" class="btn btn-default" id="save-btn">
+                <span class="glyphicon glyphicon-floppy-save" aria-hidden="true"></span>
+                Save
+              </button>
+              <button type="button" class="btn btn-default" id="load-btn">
+                <span class="glyphicon glyphicon-floppy-open" aria-hidden="true"></span>
+                Load
+              </button>
+              <button type="button" class="btn btn-primary" id="run-btn">
+                <span class="glyphicon glyphicon-play" aria-hidden="true"></span> Run!
+              </button>
+            </form>
+
+            <table class="table">
+              <tr><td>Commands</td><td><div id="rest-commands"></div></td>
+              <tr><td>Items</td><td><span id="items"></span></td>
+            </table>
+            <div id="alerts"></div>
+          </div>
+
+          <div class="tab-pane" id="repl-pane">
+            <div id="repl-console"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-2">
+        <ul id="text-nav" class="nav nav-pills nav-stacked">
+        </ul>
+      </div>
+      <div class="col-md-10">
+        <div id="text"></div>
+        <button type="button" class="btn btn-link navbar-btn" id="hint-btn">
+          <span class="glyphicon glyphicon-question-sign"></span>
+          ヒント
+        </button>
+      </div>
+    </div>
+
+    <!-- modal -->
+    <div class="modal fade" id="hint-modal" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1></h1>
+          </div>
+          <div class="modal-body">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="ending-modal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1>おめでとうございます!</h1>
+          </div>
+          <div class="modal-body markdown-text">
+すべてのステージをクリアしました!
+
+ご協力していただきありがとうございました。アンケートに答えていただけると幸いです。
+
+閉じるとページがリロードされます。
+
+<a href="./docs/answer.html" target="_blank"><span class="glyphicon glyphicon-new-window" aria-hidden="true"></span> 作者の解答</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="sorry-modal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1><span class="glyphicon glyphicon-question-alert"></span> Sorry!</h1>
+          </div>
+          <div class="modal-body">
+            内部エラーが発生したようです。閉じるとページがリロードされますが、ステージの進捗は保存されます。
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="alert-template" class="alert alert-dismissible" style="display: none">
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+    <span></span>
+  </div>
+
+  <div style="display: none">
+    <div id="md-text0" class="markdown-text">
+ようこそ! Function Questへ!
+このゲームはプレイヤーをコマンドで動かしてゴールまで導くのが目的です。画面右側のエディタにコマンドを返す関数を書いてください。
+
+```scala
+[Command] getCommands((Int, Int) player, (Int, Int) goal) {
+  [Go(Up())]
+}
+```
+
+上のコードをエディタに貼り付けてRun!を押してみてください。プレイヤーが1マス上に動くはずです。
+
+この`getCommands`関数はコマンド列を返す関数で、上のコードは`Go(Up())`という上に動くというコマンドを1回実行しなさいという意味です。
+
+コマンド列とはコマンドのリストのことです。リストは配列みたいなもの、と覚えておけばいいでしょう。
+
+```scala
+[1, 2, 3]
+```
+
+という感じでかけます。あとは足りないコマンドを追加してプレイヤーをゴールに導きましょう!
+
+    </div>
+    <div id="hint0" class="markdown-text">
+`getCommands`内の配列の要素である、`Go(Up())`の数を増やしてみましょう。プレイヤーはその数だけ上に動きます。また、多すぎてもクリアにならないので注意してください。
+    </div>
+    <div id="md-text1" class="markdown-text">
+階乗(fact)関数を作ってみましょう。関数を定義するには以下のように書きます。
+
+```scala
+Int fact(Int n) {
+  // 関数の中身
+}
+```
+
+ここで`fun`の前の`Int`は返り値の型、`fun`の後ろの`Int n`は入力の型と名前です。この形はC言語と似ているので覚えやすいでしょう。
+
+例えば引数`n`を2倍して出力する関数は以下のようにかけます
+
+```scala
+Int double(Int n) {
+  n * 2
+}
+```
+
+C言語における`return`は書かないことに注意してください。
+
+階乗関数は
+
+```
+n >= 0
+fact(n) = n * (n - 1) * (n - 2) * ... * 1
+fact(0) = 1
+
+example:
+    fact(5) = 5 * 4 * 3 * 2 * 1 = 120
+```
+
+と定義される関数です。この関数を作成したらロックされた壁![ロックされた壁](images/locked-wall.png)を解除するために関数を`AddItem`コマンドに渡しましょう。このコマンドは引数をプレイヤーのアイテム(エディタの下にリストがあります)に追加します。この後に`Unlock`コマンドでロックを解除します。ロックがかかっている壁には条件が書いてあって(マウスポインタを重ねると表示されます)、ランダムな自然数nに対してnの階乗を返す関数を渡せというものです。
+
+```scala
+Int fact(Int n) { ... }
+[Command] getCommands((Int, Int) player, (Int, Int) goal) {
+  [AddItem(fact), Unlock(Up()), Go(Up()), Go(Up())]
+}
+```
+
+ここでデバッグのコツを説明します。
+
+* `print!`で値を出力できるので、デバッグに役立ててください。
+* エディタの上にある「REPL」に切り替えて、ソースコード(例えば`fact`関数)をコピーして貼り付け、好きな数値を渡してデバッグすることもできます(詳しくは上のバーの「説明」を見てください)
+    </div>
+    <div id="hint1" class="markdown-text">
+まず、`n = 0`のときは`fact(0)`は`1`となります。これはif文で判定できます。
+
+それ以外の時は再帰をつかいます。なぜループではなくて再帰を用いる必要があるかというと、aoscriptでは値の上書きやジャンプができないからです。再帰では`fact(n - 1)`の結果を用いて`fact(n)`の結果を導きます。
+    </div>
+    <div id="md-text2" class="markdown-text">
+次はパターンマッチを使ってみましょう。パターンマッチはaoscriptで構造の内部の値をとる唯一の方法です。構造とは例えばListやTupleのことです。ここではTupleの内容をとってみましょう。パターンマッチは以下のように使えます。
+
+```scala
+(Int, Int) pair = (0, 1)
+match(pair) {
+  (a, b) -> a + b
+}
+```
+
+matchの後にマッチ(match)の対象となる値を書いて、そのあとにパターンとそれとマッチした時の値を書いていきます。たとえばこの例では2つ組のTupleである`pair`を`(a, b)`とマッチさせて`->`以降でpairの中身である`a`と`b`を使えるようにしています。この処理は`pair`の中身を加算して返しているということです。
+
+また、`match`は式なので全体で値となります。つまり以下のように使うこともできます。
+
+```scala
+val x = match(pair) {
+  (a, b) -> a
+}
+```
+
+この例を踏まえて3つ組のTuple(型は`(Int, Int, Int)`)を加算して返す関数を作ってみましょう。作った関数は先ほどと同じように`AddItem`して`Unlock`すれば壁が消えるはずです!
+
+関数の定義は例えば以下のようになります
+
+```scala
+Int sum((Int, Int, Int) tri) {
+  // 中身...
+}
+```
+    </div>
+    <div id="hint2" class="markdown-text">
+```scala
+match(tri) {
+  (a, b, c) -> ...
+}
+```
+
+あとは...
+    </div>
+    <div id="md-text3" class="markdown-text">
+このステージではゴールのy座標の位置がランダムなので少し工夫をする必要があります。
+
+まず、プレイヤーとゴールの距離を求めるためにそれぞれのy座標を取得しましょう。与えられている座標は2つ組のTupleなので先ほどの方法でy座標が取れるはずです。このための関数を定義してもいいですね。
+
+ここでこのゲームの座標系について説明すると、左上が(0, 0)で右方向にxの正の方向、下方向にyの正の方向となっています。`getCommands`の引数`player`と`goal`は2つ組のTupleになっていますが1つ目がx,2つ目がy座標を表しています。
+
+距離が取れたら例えば、指定の`n`(`Int`型)だけ`value`(`Command`型)を繰り返したリスト(`[Command]`型)を返す関数`repeat`を定義してそれを用いてコマンドを生成するといいでしょう。`repeat`の定義は例えば以下のようになります。
+
+```scala
+[Command] repeat(Int n, Command value){
+  // 中身...
+}
+```
+
+aoscriptにはfor文に相当するものがないので先ほどの階乗関数と同様に再帰を使って実装することになります。
+
+Listについて1つ付け加えると、`list`の先頭に要素`v`を追加するには
+
+```
+Cons(v, list)
+```
+
+とすればできます。`list`の中身の型と`v`の型が一致していないとエラーになるので注意してください。
+
+このステージでは2回連続で命令が実行されるので単に`Go(Up())`するだけではクリアできないので注意してください。
+    </div>
+    <div id="hint3" class="markdown-text">
+`repeat`関数について、これはStage2の階乗関数と同じようにまず`n = 0`の時の出力を考えます。`repeat(0, Go(Up()))`の時出力は何であって欲しいですか?
+
+それ以外の時、例えば`repeat(n, Go(Up())`の時は`repeat(n - 1, Go(Up()))`の結果を使います。具体的には`n - 1`の時の結果に`Cons`を用いて`value`をつなげます。
+
+```
+repeat(2, Go(Up()) = Cons(Go(Up()), repeat(1, Go(Up())))
+                   = Cons(Go(Up()), Cons(Go(Up(), repeat(0, Go(Up())))))
+                   = Cons(Go(Up()), Cons(Go(Up(), []))) # 空のリストにGo(Up())を2つつなげる
+                   = [Go(Up()), Go(Up())]
+```
+    </div>
+    <div id="md-text4" class="markdown-text">
+次はListのパターンマッチを扱ってみましょう。これができるとできることの幅が広がります。
+
+Listは配列のようなものだと説明しましたが、実際は下図のように(限定された)2分木となっています。`Cons`の左側(car)が値、右側(cdr)が次の要素の`Cons`となっています。終端は`Cons`ではなく`Null`となっています。空のListはNullです。
+
+`[1, 2, ... 3]` ![List](./images/list.png)
+
+Listのパターンマッチは先ほどと同じように書けますが、パターンが複数になるということに注意してください。なぜそうなるかというとConsとNullのパターンを用意しないと、どのパターンもマッチしないときにエラーになるからです。
+
+パターンが複数の時は上からチェックされます。
+
+例えばリストの先頭要素を返す(空のリストだったら0)処理は
+
+```scala
+match(list) {
+  [] -> 0
+  Cons(x, xs) -> x
+}
+```
+
+と書けます。このパターンマッチを使って壁のロックを解除してみましょう。
+
+実装すべき関数の定義は例えば以下のようになります。`Int`を`[]`で囲むことで`Int`のリストという意味になります。
+
+```scala
+[Int] doubleList([Int] list) {
+  // 中身...
+}
+```
+    </div>
+    <div id="hint4" class="markdown-text">
+まず、Null(空のリスト)の場合を考えてみます。空のリストの要素はないわけですから結果も空のリストになります。
+
+それ以外の時は、`match`によって分解した`x`(先頭の要素)と`xs`(先頭以外の要素が入ったリスト)を用います。具体的には`x`, `xs`にある処理をして再び`Cons`でくっつけます。
+
+```scala
+match(list) {
+  [] -> []
+  Cons(x, xs) -> Cons(xにとある処理, xsに対して今いる関数と同じ処理)
+}
+```
+    </div>
+    <div id="md-text5" class="markdown-text">
+Stage4の地形に似ていますが、右に2つ移動しなければいけない点が少し異なります。
+
+これは例えば、Stage4のソース(`stage4`でソースが保存されているはずなのでそれでロードできます)に以下に示すような`append`関数を実装して先ほどの`repeat`の結果に`Go(Right())`を2つ追加すればできそうです。
+
+```scala
+// listの末尾にvalueを追加したものを出力する関数
+[Command] append([Command] list, Command value) {
+  // 中身...
+}
+
+[Command] getCommands((Int, Int) player, (Int, Int) goal) {
+  repeat(...).append(Go(Right())).append(Go(Right()))
+}
+```
+    </div>
+    <div id="hint5" class="markdown-text">
+`append`関数についてまず、Null(空のリスト)の場合を考えてみます。空のリストに`value`を追加した時の結果は何になりますか?
+
+それ以外の時は、`match`によって分解した`x`(先頭の要素)と`xs`(先頭以外の要素が入ったリスト)を用います。具体的には`xs`にある処理をして再び`Cons`でくっつけます。
+
+```scala
+match(list) {
+  [] -> ...
+  Cons(x, xs) -> Cons(x, xsに対して今いる関数と同じ処理)
+}
+```
+    </div>
+    <div id="md-text6" class="markdown-text">
+このステージではゴールのy座標がランダムだけではなくx座標もランダムとなっています。
+
+y座標に関する移動コマンドのリストとx座標に関する移動コマンドのリストをつなげる関数が必要になってきます。例えばリスト`a`と`b`をつなげたリストを返す関数`concat`を実装してx, y座標両方の移動をつなげればできそうです。
+
+```scala
+[Command] concat([Command] a, [Command] b) {
+  // 中身...
+}
+```
+
+実装上のヒントを書くと`b`をmatchにより分解してから(`b`が空のリストの時も考える)、その先頭要素と`a`とを先ほど実装した`append`を用いてつなげたものと`b`の先頭要素以外をまた`concat`でつなぎます。
+
+模式図(ソースコードではありません)
+```
+a = [1, 2, 3]
+b = [4, 5, 6]
+
+concat(a, b) = concat([1, 2, 3, 4], [5, 6])
+             = concat([1, 2, 3, 4, 5], [6])
+             = concat([1, 2, 3, 4, 5, 6], [])
+             = [1, 2, 3, 4, 5, 6]
+```
+    </div>
+    <div id="hint6" class="markdown-text">
+最後のステージなのでヒント無しで頑張ってください!
+    </div>
+ </div>
+
+  <script src="js/coffee-script.js"></script>
+  <script src="js/jquery-1.11.3.min.js"></script>
+  <script src="js/jquery.lightgamer.js"></script>
+  <script src="js/bootstrap.min.js"></script>
+  <script src="js/ace.js"></script>
+  <script src="js/underscore-min.js"></script>
+  <script src="js/marked.min.js"></script>
+  <script src="js/highlight.pack.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  <script src="js/jquery.console.js"></script>
+  <script src="./aoscript/dist/aoscript.js"></script>
+  <script src="main.js"></script>
+</body>
