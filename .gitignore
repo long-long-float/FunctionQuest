@@ -1,11 +1,6 @@
-# external library
-aoscript
-
 main.js
 
 docs/*.html
 !docs/intro.html
 !docs/outro.html
 
-player-data/*
-!player-data/.keep

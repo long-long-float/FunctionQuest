@@ -1,0 +1,3 @@
+[submodule "AOScript"]
+	path = AOScript
+	url = https://github.com/long-long-float/AOScript.git
